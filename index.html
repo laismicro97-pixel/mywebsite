@@ -3,16 +3,160 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My website!</title>
+    <title>My C++ code!</title>
 </head>
 <body>
-    <h1>Progetti del 4Sia di Fermo, Marche!</h1>
-    <h2>Let's understand how the Internet works!</h2>
-    <h3>Buon sabato dalla classe migliore di tutte!</h3>
-    <a href="students.html">Link!</a>
+    <h1>Calcolatore prezzo Telquel!</h1>
+    <h2>Esempio codice di Tommaso Pizzini!</h2>
+    <pre><code>
+#include <iostream>
+#include <chrono>
+
+using namespace std;
+using namespace std::chrono;
+
+const int giorni_liquidazione=2;
+const double days_in_a_year=365.0;
+
+class giorno_fin {
+    year_month_day giorno;
+public:
+    // Costruttore di default: inizializza a 1 gennaio 2023
+    giorno_fin() : giorno(year{2023}, month{1}, day{1}) {}
+
+    // Costruttore con data specifica
+    giorno_fin(int y, unsigned m, unsigned d) : giorno(year{y}, month{m}, chrono::day{d}) {}
+
+    // Controlla se la data esiste
+    bool esiste() const {
+        return giorno.ok();
+    }
+    
+    //Getter
+    int get_day() const {       // const perché non modifichiamo l'oggetto
+        return unsigned(giorno.day());  // day() restituisce chrono::day, convertiamo in intero
+    }
+    int get_month() const {
+        return unsigned(giorno.month());
+    }
+    int get_year() const {
+        return int(giorno.year());
+    }
+    
+    // Print dati
+    void print() const {
+        cout 
+            << (get_day() < 10 ? "0" : "") << get_day() << "-" 
+            << (get_month() < 10 ? "0" : "") << get_month() << "-" 
+            << get_year() 
+            << endl;
+    }
+    
+    // Trasforma classe in year_month_day
+    year_month_day ritrasforma_a_formato_origine() const {
+        return year_month_day{
+            year{get_year()},
+            month{static_cast<unsigned>(get_month())},
+            day{static_cast<unsigned>(get_day())}
+        };
+    }
+
+    // Controlla se la data è un giorno feriale (lunedì-venerdì)
+    bool è_feriale() const {
+        weekday wd{this->ritrasforma_a_formato_origine()};
+        return !(wd == Saturday || wd == Sunday);
+    }  
+    
+    // Calcola il giorno di liquidazione non feriale
+    giorno_fin get_liquidation_date() const {
+        // Converte la data di vendita in sys_days
+        sys_days sd{ritrasforma_a_formato_origine()};
+    
+        // Aggiunge 2 giorni
+        sd += days{giorni_liquidazione};
+    
+        // Se cade sabato o domenica, sposta al lunedì successivo
+        weekday wd{sd};
+        if (wd == Saturday) {
+            sd += days{2}; // sabato → lunedì
+        } else if (wd == Sunday) {
+            sd += days{1}; // domenica → lunedì
+        }
+    
+        // Riconverte in giorno_fin
+        year_month_day new_date{sd};
+        return giorno_fin{int(new_date.year()), unsigned(new_date.month()), unsigned(new_date.day())};
+    }
+    
+    // Giorni di differenza tra due date
+    int get_diff(const giorno_fin& other) const {
+        sys_days sd1{ritrasforma_a_formato_origine()};
+        sys_days sd2{other.ritrasforma_a_formato_origine()};
+        return abs((sd1 - sd2).count())+1;
+    }
+};
+
+class Bond {
+    string name;
+    double interesse;
+    double corso_secco;
+    giorno_fin first_coupon_day;
+
+public:
+    Bond() {} // costruttore di default
+
+    Bond(string n, double i, double cs, giorno_fin cd)
+        : name(n), interesse(i), corso_secco(cs), first_coupon_day(cd) {}
+    
+    // Trova prezzo quel_tel ad una data
+    double get_telquel_price(const giorno_fin& sale_day) const {
+        giorno_fin liquid_day = sale_day.get_liquidation_date(); // calcola il giorno di liquidazione
+        int diff_days = liquid_day.get_diff(first_coupon_day);          // differenza in giorni
+        return corso_secco+(corso_secco * interesse) * (static_cast<double>(diff_days) / days_in_a_year);
+    }
+    
+    // Stampa statistiche
+    void print_stat() const {
+        cout << "Nome: " << name
+             << ", Interesse: " << interesse
+             << ", Corso secco: " << corso_secco
+             << ", Primo giorno di cedola: ";
+        first_coupon_day.print();
+    }
+    
+    // Stampa prezzo telquel ad una certa data
+    void print_telquel(const giorno_fin& sale_day) const{
+        cout<<"Prezzo telquel: "<< get_telquel_price(sale_day);
+    }
+    
+    // Getter
+    giorno_fin get_fist_coupon_date(){
+        return first_coupon_day;
+    }
+};
+
+int main() {
+    giorno_fin first_coupon(2026, 2, 10);
+    giorno_fin sale_day(2026,2,27);
+    Bond b("ENI Spa SDG LINKED", 0.043, 103.27, first_coupon);
+    
+    giorno_fin liquidation_day=sale_day.get_liquidation_date();
+    
+    sale_day.print();
+    liquidation_day.print();
+    
+    cout<<liquidation_day.get_diff(b.get_fist_coupon_date())<<endl;
+    
+    b.print_telquel(sale_day);
+
+    return 0;
+}
+
+    </code></pre>
 </body>
 
 </html>
+
 
 
 
